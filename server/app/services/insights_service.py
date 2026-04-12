@@ -10,6 +10,7 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
     
     lang_count = {}
     repos = raw_github_stats.get("repositories", {}).get("nodes", [])
+    total_stars = sum(r.get("stargazerCount", 0) for r in repos)
     
     for repo in repos:
         languages = repo.get("languages",{}).get("nodes", [])
@@ -20,6 +21,18 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
     
     top_languages = sorted(lang_count, key=lang_count.get, reverse=True)[:5]
     
+    # Extracting Social Stats
+    followers = raw_github_stats.get("followers", {}).get("totalCount", 0)
+    following = raw_github_stats.get("following", {}).get("totalCount", 0)
+    
+    # Calculate Active Days (days with at least one contribution)
+    active_days = 0
+    weeks = contributions.get("contributionCalendar", {}).get("weeks", [])
+    for week in weeks:
+        for day in week.get("contributionDays", []):
+            if day.get("contributionCount", 0) > 0:
+                active_days += 1
+
     archetype = determine_archetype(raw_github_stats, total_commits, total_prs)
     
     return {
@@ -27,7 +40,10 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             "total_commits": total_commits,
             "total_prs": total_prs,
             "total_issues": total_issues,
-            "top_languages": top_languages
+            "top_languages": top_languages,
+            "total_stars": total_stars,
+            "active_days_per_year": active_days,
+            "social_ratio": f"{followers}/{following}"
         },
         "archetype": archetype
     }
