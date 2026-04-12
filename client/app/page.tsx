@@ -3,6 +3,7 @@
 import { motion, Variants } from "framer-motion";
 import { FloatingElements } from "@/components/floating-elements";
 import { BackgroundSVGs } from "@/components/background-svgs";
+import { AUTH_LOGIN_URL } from "./lib/api";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -62,7 +63,7 @@ const buttonVariants: Variants = {
 
 export default function Home() {
   const loginWithGithub = () => {
-    window.location.href = 'http://localhost:8000/api/auth/login';
+    window.location.href = AUTH_LOGIN_URL;
   };
 
   return (

@@ -13,3 +13,8 @@ ENCRYPTION_TOKEN = os.getenv("ENCRYPTION_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Deployment URLs
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ENV = os.getenv("ENV", "development")
+
