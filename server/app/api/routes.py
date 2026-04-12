@@ -68,7 +68,7 @@ async def login(request: Request):
         httponly = True,
         max_age = 600,
         samesite = "lax",
-        secure = ENV == "production"  # set True in production (HTTPS)  
+        secure = True  # set True in production (HTTPS)  
     )
     return response
 
@@ -162,7 +162,7 @@ async def callback(request: Request, code: str, state: str,
             value=app_token,
             httponly=True,
             max_age=3600 * 24, # 24 hours
-            samesite="lax",
+            samesite="none",
             secure=ENV == "production" # Set to True in production (HTTPS)
         )
         response.delete_cookie("oauth_state")
