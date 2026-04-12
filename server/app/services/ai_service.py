@@ -22,18 +22,28 @@ async def generate_roast_gemini(stats: Dict[str, Any], archetype: str, prompt: s
         return "You code so much that even my AI brain is tired. Go outside."
 
 async def generate_roast(stats: Dict[str, Any], archetype: str) -> str:
+    languages = ', '.join(stats.get('top_languages', []))
+    social = stats.get('social_ratio', '0/0')
+    active_days = stats.get('active_days_per_year', 0)
+    
     prompt = f"""
-    You are a sarcastic senior developer. Roast this GitHub user based on their stats:
-    - Archetype: {archetype}
-    - Total Commits: {stats.get('total_commits', 0)}
-    - Top Languages: {', '.join(stats.get('top_languages', []))}
-    - Issues Closed: {stats.get('total_issues', 0)}
+    You are a legendary, slightly grumpy Senior Software Architect. 
+    Analyze this developer's "GitHub Wrapped" stats and give them a highly personalized, 
+    dev-centric roast.
 
-    Rules:
-    1. Be witty and sarcastic, but not mean.
-    2. Use developer inside jokes (indentation, YAML, coffee, etc.).
-    3. Keep it to 2 sentences max.
-    4. Mention their archetype.
+    USER DATA:
+    - Archetype: {archetype}
+    - Coding Activity: {stats.get('total_commits')} commits over {active_days} active days.
+    - Stack: {languages}
+    - Impact: {stats.get('total_stars')} stars and {stats.get('total_prs')} Pull Requests.
+    - Social Ratio (Followers/Following): {social}
+
+    ROAST INSTRUCTIONS:
+    1. Be specific! If they have high commits but low stars, mention it.
+    2. Use their specific languages ({languages}) in the jokes.
+    3. If they are a "{archetype}", explain why that's both impressive and slightly concerning.
+    4. Mention their social ratio ({social}) if it's lopsided.
+    5. Keep it to 2-3 sentences max. Be sharp, witty, and deeply technical.
     """
     
     try: 
@@ -44,7 +54,7 @@ async def generate_roast(stats: Dict[str, Any], archetype: str) -> str:
                 {"role": "system", "content": "You are a sarcastic senior developer."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100
+            max_tokens=300
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
