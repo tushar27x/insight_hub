@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, UTC
 from jose import jwt, JWTError
 from typing import Optional, Dict, Any
-from app.core.config import JWT_SECRET, ALGORITHM
+from app.core.config import JWT_SECRET, ALGORITHM, ENCRYPTION_TOKEN
+from cryptography.fernet import Fernet
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 hours
 
@@ -27,3 +28,9 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
         return payload
     except JWTError:
         return None
+
+def encrypt_token(token: str) -> str:
+    return Fernet.encrypt(token)
+
+def decrypt_token(encrypted_token: str) -> str:
+    return Fernet.decrypt(encrypted_token)

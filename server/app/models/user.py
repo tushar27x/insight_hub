@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, JSON
@@ -12,7 +12,8 @@ class UserInsights(SQLModel, table=True):
     user_id: int = Field(primary_key=True)  # GitHub ID
     user_name: str = Field(index=True)      # GitHub Login
     archetype: Optional[str] = None
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC).replace(tzinfo=None))
+    encrypted_github_token: Optional[str] = None
     
     # One-to-one relationship with the template data
     template: Optional["UserTemplates"] = Relationship(back_populates="user")
