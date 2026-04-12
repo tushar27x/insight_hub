@@ -6,7 +6,7 @@ from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.postgres import get_db
 from app.db.redis import get_redis
-from app.core.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+from app.core.config import GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, FRONTEND_URL, BACKEND_URL, ENV
 from urllib.parse import urlencode
 from app.models.user import UserInsights, UserTemplates
 from app.core.security import create_access_token
@@ -19,6 +19,19 @@ import httpx
 
 
 router = APIRouter()
+
+
+def _backend_base_url(request: Request) -> str:
+    configured = (BACKEND_URL or "").strip().rstrip("/")
+    if configured and configured != "http://localhost:8000":
+        return configured
+
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}".rstrip("/")
+
+    return str(request.base_url).rstrip("/")
 
 @router.get("/")
 async def test(db: AsyncSession = Depends(get_db),
@@ -35,12 +48,13 @@ async def test(db: AsyncSession = Depends(get_db),
     }
     
 @router.get("/auth/login")
-async def login():
+async def login(request: Request):
     state = secrets.token_urlsafe(32)
+    callback_url = f"{_backend_base_url(request)}/api/auth/callback"
 
     params = {
         "client_id": GITHUB_CLIENT_ID,
-        "redirect_uri": "http://localhost:8000/api/auth/callback",
+        "redirect_uri": callback_url,
         "scope": "read:user repo",
         "state": state
     }
@@ -54,7 +68,7 @@ async def login():
         httponly = True,
         max_age = 600,
         samesite = "lax",
-        secure = False  # set True in production (HTTPS)  
+        secure = ENV == "production"  # set True in production (HTTPS)  
     )
     return response
 
@@ -67,13 +81,14 @@ async def callback(request: Request, code: str, state: str,
         raise HTTPException(status_code=400, detail="Invalid state")
     
     async with httpx.AsyncClient() as client:
+        callback_url = f"{_backend_base_url(request)}/api/auth/callback"
         # 2. Exchange Code for GITHUB Token
         token_url = "https://github.com/login/oauth/access_token"
         payload = {
             "client_id": GITHUB_CLIENT_ID,
             "client_secret": GITHUB_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": "http://localhost:8000/api/auth/callback"
+            "redirect_uri": callback_url
         }
         headers = {"Accept": "application/json"}
         
@@ -141,14 +156,14 @@ async def callback(request: Request, code: str, state: str,
         
         
         # 6. Build Response and Set Session Cookie
-        response = RedirectResponse(url="http://localhost:3000/dashboard")
+        response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard")
         response.set_cookie(
             key="session_token",
             value=app_token,
             httponly=True,
             max_age=3600 * 24, # 24 hours
             samesite="lax",
-            secure=False # Set to True in production (HTTPS)
+            secure=ENV == "production" # Set to True in production (HTTPS)
         )
         response.delete_cookie("oauth_state")
         

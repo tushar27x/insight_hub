@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
 from app.db.postgres import init_db
+from app.core.config import FRONTEND_URL
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -15,7 +16,7 @@ app = FastAPI(lifespan=lifespan)
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
