@@ -195,6 +195,7 @@ async def get_user_insights(
         "user_name": user.user_name,
         "archetype": user.archetype,
         "stats": template.stats_json if template else {},
+        "display_json": template.display_json if template else {},
         "updated_at": user.updated_at.isoformat()
     }
     await redis.setex(cached_key, 3600*24, json.dumps(response_data, default=str))
