@@ -362,7 +362,7 @@ export default function Dashboard() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    api.get("user/insights")
+    api.get("/user/insights")
       .then(r => setData(r.data))
       .catch(console.error)
       .finally(() => setLoading(false));

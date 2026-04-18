@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// Force remove any trailing slashes from the base URL
 const normalizedApiUrl = rawApiUrl.replace(/\/+$/, '');
 
 const api = axios.create({
