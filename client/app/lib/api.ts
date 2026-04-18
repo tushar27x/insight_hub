@@ -5,7 +5,17 @@ const normalizedApiUrl = rawApiUrl.replace(/\/+$/, '');
 
 const api = axios.create({
   baseURL: normalizedApiUrl,
-  withCredentials: true,
+});
+
+// Automatically add the token to every request
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('session_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
 });
 
 export const AUTH_LOGIN_URL = `${normalizedApiUrl}/auth/login`;

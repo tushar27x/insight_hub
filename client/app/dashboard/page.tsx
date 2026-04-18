@@ -147,21 +147,21 @@ export default function Dashboard() {
   const [tab, setTab] = useState<"stats" | "stack" | "network">("stats");
 
   const handleLogout = () => {
-    // 1. Clear cookie on frontend domain (required for cross-domain auth)
-    document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax";
+    // 1. Clear token from localStorage
+    localStorage.removeItem("session_token");
     
-    // 2. Redirect to backend to clear backend-side cookie and redirect home
+    // 2. Redirect to backend to clear any remaining backend-side cookie and redirect home
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     window.location.href = `${backendUrl}/auth/logout`;
   };
 
   useEffect(() => {
-    // Cross-domain handshake: if token is in URL, save it to cookie
+    // Cross-domain handshake: if token is in URL, save it to localStorage
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
     if (token) {
-      document.cookie = `session_token=${token}; path=/; max-age=${3600 * 24}; samesite=lax`;
+      localStorage.setItem("session_token", token);
       // Remove token from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
