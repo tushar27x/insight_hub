@@ -147,6 +147,10 @@ export default function Dashboard() {
   const [tab, setTab] = useState<"stats" | "stack" | "network">("stats");
 
   const handleLogout = () => {
+    // 1. Clear cookie on frontend domain (required for cross-domain auth)
+    document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax";
+    
+    // 2. Redirect to backend to clear backend-side cookie and redirect home
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     window.location.href = `${backendUrl}/auth/logout`;
   };
