@@ -82,6 +82,8 @@ async def callback(request: Request, code: str, state: str,
     
     async with httpx.AsyncClient() as client:
         callback_url = f"{_backend_base_url(request)}/api/auth/callback"
+        print(f"Handshake using redirect_uri: {callback_url}")
+        
         # 2. Exchange Code for GITHUB Token
         token_url = "https://github.com/login/oauth/access_token"
         payload = {
@@ -115,45 +117,48 @@ async def callback(request: Request, code: str, state: str,
             raise HTTPException(status_code=400, detail="Failed to fetch user data from GitHub")
 
         # 4. Database Sync (Upsert)
-        
-        github_stats = await fetch_github_stats(github_token, github_login)
-        processed_insights = calculate_user_insights(github_stats)
-        
-        stmt = select(UserInsights).where(UserInsights.user_id == github_id)
-        result = await db.execute(stmt)
-        user = result.scalar_one_or_none()
-        
-        if user:
-            user.user_name = github_login
-            user.archetype = processed_insights["archetype"]
-            user.updated_at = datetime.now(UTC).replace(tzinfo=None)
-        else:
-            user = UserInsights(user_id=github_id, user_name=github_login)
-            user.archetype = processed_insights["archetype"]
-            db.add(user)
-        
-        template_stmt = select(UserTemplates).where(UserTemplates.user_id == github_id)
-        template_res = await db.execute(template_stmt)
-        template = template_res.scalar_one_or_none()
-        
-        # Parallel AI generation
-        ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
-        weekly_review_task = generate_weekly_review(processed_insights["stats"])
-        ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
+        try:
+            github_stats = await fetch_github_stats(github_token, github_login)
+            processed_insights = calculate_user_insights(github_stats)
+            
+            stmt = select(UserInsights).where(UserInsights.user_id == github_id)
+            result = await db.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if user:
+                user.user_name = github_login
+                user.archetype = processed_insights["archetype"]
+                user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+            else:
+                user = UserInsights(user_id=github_id, user_name=github_login)
+                user.archetype = processed_insights["archetype"]
+                db.add(user)
+            
+            template_stmt = select(UserTemplates).where(UserTemplates.user_id == github_id)
+            template_res = await db.execute(template_stmt)
+            template = template_res.scalar_one_or_none()
+            
+            # Parallel AI generation
+            ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
+            weekly_review_task = generate_weekly_review(processed_insights["stats"])
+            ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
 
-        if template:
-            template.stats_json = processed_insights["stats"]
-            template.display_json = ai_roast if ai_roast else {}
-            template.weekly_review = weekly_review
-        else:
-            template = UserTemplates(user_id = github_id,
-                                    stats_json = processed_insights["stats"],
-                                    display_json = ai_roast if ai_roast else {},
-                                    weekly_review = weekly_review)
-            db.add(template) 
-    
+            if template:
+                template.stats_json = processed_insights["stats"]
+                template.display_json = ai_roast if ai_roast else {}
+                template.weekly_review = weekly_review
+            else:
+                template = UserTemplates(user_id = github_id,
+                                        stats_json = processed_insights["stats"],
+                                        display_json = ai_roast if ai_roast else {},
+                                        weekly_review = weekly_review)
+                db.add(template) 
         
-        await db.commit()
+            await db.commit()
+        except Exception as e:
+            print(f"Database Sync Error: {e}")
+            await db.rollback()
+            # We don't raise here so the user can still get their token
         
         # 5. Generate our OWN App Token for the session
         app_token = create_access_token(
