@@ -33,6 +33,13 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             if day.get("contributionCount", 0) > 0:
                 active_days += 1
 
+    # Extract last week's heatmap
+    last_week_heatmap = []
+    if weeks:
+        # Flatten all days and take the last 7
+        all_days = [day for week in weeks for day in week.get("contributionDays", [])]
+        last_week_heatmap = [day.get("contributionCount", 0) for day in all_days[-7:]]
+
     archetype = determine_archetype(raw_github_stats, total_commits, total_prs)
     
     return {
@@ -43,7 +50,8 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             "top_languages": top_languages,
             "total_stars": total_stars,
             "active_days_per_year": active_days,
-            "social_ratio": f"{followers}/{following}"
+            "social_ratio": f"{followers}/{following}",
+            "last_week_heatmap": last_week_heatmap
         },
         "archetype": archetype
     }
