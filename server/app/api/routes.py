@@ -172,7 +172,16 @@ async def get_user_insights(
     db: AsyncSession = Depends(get_db),
     redis = Depends(get_redis)
 ):
-    token = request.cookies.get("session_token")
+    # 1. Try to get token from Authorization header
+    auth_header = request.headers.get("Authorization")
+    token = None
+    
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    else:
+        # 2. Fallback to cookie
+        token = request.cookies.get("session_token")
+        
     if not token:
         raise HTTPException(status_code=401, detail="Not logged in")
     
