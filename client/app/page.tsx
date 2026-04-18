@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { FloatingElements } from "@/components/floating-elements";
 
 export default function Home() {
   const loginWithGithub = () => {
@@ -14,6 +15,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 font-sans">
+      <FloatingElements />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

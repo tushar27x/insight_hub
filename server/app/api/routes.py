@@ -169,6 +169,12 @@ async def callback(request: Request, code: str, state: str,
         
         return response
 
+@router.get("/auth/logout")
+async def logout():
+    response = RedirectResponse(url=FRONTEND_URL)
+    response.delete_cookie("session_token")
+    return response
+
 @router.get("/user/insights")
 async def get_user_insights(
     request: Request,

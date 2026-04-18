@@ -146,6 +146,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"stats" | "stack" | "network">("stats");
 
+  const handleLogout = () => {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    window.location.href = `${backendUrl}/auth/logout`;
+  };
+
   useEffect(() => {
     api.get("/user/insights")
       .then(r => setData(r.data))
@@ -197,9 +202,19 @@ export default function Dashboard() {
         {/* ── HERO ── */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.55 }}>
           {/* eyebrow */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 36 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399", display: "inline-block" }} />
-            <span style={monoLabel}>GitHub Retrospective · 2026</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", boxShadow: "0 0 8px #34d399", display: "inline-block" }} />
+              <span style={monoLabel}>GitHub Retrospective · 2026</span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleLogout}
+              className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white transition-colors border border-white/10 px-3 py-1.5 rounded-full hover:bg-white/5"
+            >
+              Logout
+            </motion.button>
           </div>
 
           {/* username + archetype */}
