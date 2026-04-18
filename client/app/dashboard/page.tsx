@@ -152,6 +152,16 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // Cross-domain handshake: if token is in URL, save it to cookie
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (token) {
+      document.cookie = `session_token=${token}; path=/; max-age=${3600 * 24}; samesite=lax`;
+      // Remove token from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
     api.get("/user/insights")
       .then(r => setData(r.data))
       .catch(console.error)

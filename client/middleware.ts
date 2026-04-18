@@ -6,8 +6,10 @@ export default function middleware(request: NextRequest) {
 
   // Protect the dashboard route
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!sessionToken) {
-      // Redirect to landing page if no session token
+    const hasTokenInUrl = request.nextUrl.searchParams.has('token');
+    
+    if (!sessionToken && !hasTokenInUrl) {
+      // Redirect to landing page if no session token AND no token in URL
       return NextResponse.redirect(new URL('/', request.url));
     }
   }
