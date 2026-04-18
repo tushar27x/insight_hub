@@ -13,9 +13,10 @@ from app.core.security import create_access_token
 from app.services.github_service import fetch_github_stats
 from app.services.insights_service import calculate_user_insights 
 from app.core.security import decode_access_token
-from app.services.ai_service import generate_roast
+from app.services.ai_service import generate_roast, generate_weekly_review
 import secrets
 import httpx
+import asyncio
 
 
 router = APIRouter()
