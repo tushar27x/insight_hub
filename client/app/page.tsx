@@ -5,10 +5,10 @@ import { FloatingElements } from "@/components/floating-elements";
 
 export default function Home() {
   const loginWithGithub = () => {
-    // Dynamically use the production or local backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL 
-      ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') 
-      : "http://localhost:8000";
+    // If NEXT_PUBLIC_API_URL is set (e.g., https://.../api), strip /api to get the base
+    // Otherwise fallback to local dev URL
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    const backendUrl = envUrl ? envUrl.replace(/\/api\/?$/, '') : "http://localhost:8000";
       
     window.location.href = `${backendUrl}/api/auth/login`;
   };
