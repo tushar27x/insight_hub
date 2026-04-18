@@ -272,12 +272,14 @@ function SlideRoast({ data }: { data: UserInsights }) {
 /* ─── SLIDE 8: SUMMARY ─── */
 function SlideSummary({ data, onLogout }: { data: UserInsights; onLogout: () => void }) {
   const s = data.stats;
+  const router = useRouter();
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full p-6 space-y-6 overflow-y-auto pt-16 pb-20"
     >
-      <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 space-y-8 backdrop-blur-md shadow-2xl">
+      <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-8 space-y-8 backdrop-blur-md shadow-2xl pointer-events-auto">
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-3xl font-black text-white tracking-tighter">RETROSPECTIVE</h2>
@@ -313,8 +315,8 @@ function SlideSummary({ data, onLogout }: { data: UserInsights; onLogout: () => 
         </div>
 
         <button 
-          onClick={() => window.location.href = "/"}
-          className="w-full flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-black uppercase text-sm hover:bg-white/90 transition-colors"
+          onClick={() => router.push("/")}
+          className="w-full flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-black uppercase text-sm hover:bg-white/90 transition-colors pointer-events-auto relative z-50"
         >
           <ChevronLeft size={16} />
           Back to Hub
@@ -335,6 +337,7 @@ export default function Dashboard() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const TOTAL_SLIDES = 9;
+  const router = useRouter();
 
   const nextSlide = useCallback(() => {
     setActiveIndex((prev) => (prev < TOTAL_SLIDES - 1 ? prev + 1 : prev));
@@ -409,7 +412,7 @@ export default function Dashboard() {
         </div>
 
         {/* Navigation Overlays */}
-        <div className="absolute inset-0 z-40 flex">
+        <div className="absolute inset-0 z-30 flex">
           <div 
             className="w-[30%] h-full cursor-pointer" 
             onClick={prevSlide}
@@ -429,7 +432,7 @@ export default function Dashboard() {
         </div>
 
         {/* Slides Content */}
-        <div className="relative h-full z-30">
+        <div className="relative h-full z-40">
           <AnimatePresence mode="wait">
             {activeIndex === 0 && <SlideWeeklySummary key="0" data={data} />}
             {activeIndex === 1 && <SlideIntro key="1" data={data} />}
