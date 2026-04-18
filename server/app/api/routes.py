@@ -153,20 +153,11 @@ async def callback(request: Request, code: str, state: str,
         app_token = create_access_token(
             data={"sub": str(github_id), "name": github_login}
         )
-        
-        
-        # 6. Build Response and Set Session Cookie
-        response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard")
-        response.set_cookie(
-            key="session_token",
-            value=app_token,
-            httponly=True,
-            max_age=3600 * 24, # 24 hours
-            samesite="none",
-            secure=True 
-        )
+
+        # 6. Build Response and Redirect with Token in URL (Cross-Domain Fix)
+        response = RedirectResponse(url=f"{FRONTEND_URL}/dashboard?token={app_token}")
         response.delete_cookie("oauth_state")
-        
+
         return response
 
 @router.get("/auth/logout")
