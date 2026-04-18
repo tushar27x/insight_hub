@@ -28,6 +28,7 @@ class UserTemplates(SQLModel, table=True):
     # Using sa_column to explicitly declare JSON type for Postgres compatibility
     stats_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     display_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
+    weekly_review: Optional[str] = Field(default=None)
     version: str = Field(default="v1")
     
     user: Optional[UserInsights] = Relationship(back_populates="template")

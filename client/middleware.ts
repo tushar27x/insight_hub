@@ -14,13 +14,6 @@ export default function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect to dashboard if already logged in and trying to access landing page
-  if (request.nextUrl.pathname === '/') {
-    if (sessionToken) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-  }
-
   return NextResponse.next();
 }
 

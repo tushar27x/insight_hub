@@ -26,8 +26,10 @@ interface UserInsights {
     total_stars: number;
     active_days_per_year: number;
     social_ratio: string;
+    last_week_heatmap: number[];
   };
   display_json?: string;
+  weekly_review?: string;
   updated_at: string;
 }
 
@@ -61,10 +63,44 @@ function LoadingScreen() {
   );
 }
 
+/* ─── SLIDE 0: WEEKLY SUMMARY ─── */
+function SlideWeeklySummary({ data }: { data: UserInsights }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center h-full text-center space-y-10 p-8"
+    >
+      <div className="space-y-4">
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }} 
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white/5 border border-white/10 px-4 py-1.5 rounded-full inline-block"
+        >
+          <span className="text-[10px] font-mono text-white/60 tracking-[0.3em] uppercase">Weekly Sync</span>
+        </motion.div>
+        <h2 className="text-4xl font-black text-white leading-tight uppercase tracking-tighter">Your Last 7 Days <br /> In Code</h2>
+      </div>
+
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="relative bg-white/5 border border-white/10 p-8 rounded-[32px] backdrop-blur-sm"
+      >
+        <p className="text-lg md:text-xl text-white/90 leading-relaxed font-light italic">
+          {data.weekly_review ?? "The data is in. Let's see how your week went..."}
+        </p>
+      </motion.div>
+
+      <p className="text-white/30 font-mono text-[10px] tracking-widest uppercase">Generated using your latest GitHub activity.</p>
+    </motion.div>
+  );
+}
+
 /* ─── SLIDE 1: INTRO ─── */
 function SlideIntro({ data }: { data: UserInsights }) {
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full text-center space-y-8 p-8"
     >
@@ -89,7 +125,7 @@ function SlideIntro({ data }: { data: UserInsights }) {
 /* ─── SLIDE 2: CONSISTENCY ─── */
 function SlideConsistency({ data }: { data: UserInsights }) {
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full text-center space-y-8 p-8 bg-gradient-to-b from-blue-900/20 to-transparent"
     >
@@ -103,10 +139,46 @@ function SlideConsistency({ data }: { data: UserInsights }) {
   );
 }
 
-/* ─── SLIDE 3: STACK ─── */
+/* ─── SLIDE 3: HEATMAP (LAST WEEK) ─── */
+function SlideHeatmap({ data }: { data: UserInsights }) {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const maxContributions = Math.max(...data.stats.last_week_heatmap, 1);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col items-center justify-center h-full text-center space-y-12 p-8"
+    >
+      <Activity size={50} className="text-emerald-400" />
+      <div className="space-y-4">
+        <h3 className="text-white/40 font-mono text-xs tracking-widest uppercase">Last 7 Days</h3>
+        <p className="text-4xl font-black text-white leading-tight uppercase">Recent Activity</p>
+      </div>
+
+      <div className="flex items-end justify-center gap-3 h-48 w-full px-4">
+        {data.stats.last_week_heatmap.map((count, i) => (
+          <div key={i} className="flex flex-col items-center gap-3 flex-1">
+            <motion.div 
+              initial={{ height: 0 }}
+              animate={{ height: `${(count / maxContributions) * 100}%` }}
+              transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 100 }}
+              className="w-full bg-emerald-500 rounded-t-lg min-h-[4px]"
+              style={{ opacity: count === 0 ? 0.1 : 0.3 + (count / maxContributions) * 0.7 }}
+            />
+            <span className="text-[10px] font-mono text-white/40 uppercase rotate-45 mt-2">{days[i]}</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-white/30 font-mono text-[10px] tracking-widest uppercase">Your rhythm in the last week.</p>
+    </motion.div>
+  );
+}
+
+/* ─── SLIDE 4: STACK ─── */
 function SlideStack({ data }: { data: UserInsights }) {
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full space-y-6 p-8"
     >
@@ -114,7 +186,7 @@ function SlideStack({ data }: { data: UserInsights }) {
       <h3 className="text-white/40 font-mono text-xs tracking-widest uppercase">Your Weapon of Choice</h3>
       <div className="w-full space-y-4">
         {data.stats.top_languages.slice(0, 5).map((lang, i) => (
-          <motion.div
+          <motion.div 
             key={lang}
             initial={{ x: -30, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -130,11 +202,11 @@ function SlideStack({ data }: { data: UserInsights }) {
   );
 }
 
-/* ─── SLIDE 4: NETWORK ─── */
+/* ─── SLIDE 5: NETWORK ─── */
 function SlideNetwork({ data }: { data: UserInsights }) {
   const pct = Math.min((parseFloat(data.stats.social_ratio) || 0) * 10, 100);
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full text-center space-y-12 p-8"
     >
@@ -155,16 +227,16 @@ function SlideNetwork({ data }: { data: UserInsights }) {
   );
 }
 
-/* ─── SLIDE 5: ARCHETYPE ─── */
+/* ─── SLIDE 6: ARCHETYPE ─── */
 function SlideArchetype({ data }: { data: UserInsights }) {
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full text-center p-8 bg-gradient-to-t from-purple-900/20 to-transparent"
     >
       <Zap size={60} className="text-amber-400 mb-8" />
       <p className="text-white/40 font-mono text-xs tracking-widest uppercase mb-4">Your Developer Archetype</p>
-      <motion.h2
+      <motion.h2 
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 12 }}
@@ -176,10 +248,10 @@ function SlideArchetype({ data }: { data: UserInsights }) {
   );
 }
 
-/* ─── SLIDE 6: ROAST ─── */
+/* ─── SLIDE 7: ROAST ─── */
 function SlideRoast({ data }: { data: UserInsights }) {
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full p-10 bg-[#0a0a0a]"
     >
@@ -196,11 +268,11 @@ function SlideRoast({ data }: { data: UserInsights }) {
   );
 }
 
-/* ─── SLIDE 7: SUMMARY ─── */
+/* ─── SLIDE 8: SUMMARY ─── */
 function SlideSummary({ data, onLogout }: { data: UserInsights; onLogout: () => void }) {
   const s = data.stats;
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center h-full p-6 space-y-6 overflow-y-auto pt-16 pb-20"
     >
@@ -239,17 +311,17 @@ function SlideSummary({ data, onLogout }: { data: UserInsights; onLogout: () => 
           </div>
         </div>
 
-        <button
-          onClick={onLogout}
+        <button 
+          onClick={() => window.location.href = "/"}
           className="w-full flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-black uppercase text-sm hover:bg-white/90 transition-colors"
         >
-          <LogOut size={16} />
-          End Session
+          <ChevronLeft size={16} />
+          Back to Hub
         </button>
       </div>
 
       <p className="text-white/20 font-mono text-[10px] tracking-widest uppercase text-center px-12 leading-relaxed">
-        Screenshot and share your year in code. <br /> See you in 2027.
+        Screenshot and share your year in code. <br /> See you next week.
       </p>
     </motion.div>
   );
@@ -261,7 +333,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const TOTAL_SLIDES = 7;
+  const TOTAL_SLIDES = 9;
 
   const nextSlide = useCallback(() => {
     setActiveIndex((prev) => (prev < TOTAL_SLIDES - 1 ? prev + 1 : prev));
@@ -286,7 +358,7 @@ export default function Dashboard() {
       localStorage.setItem("session_token", token);
       // Set cookie for the middleware
       document.cookie = `session_token=${token}; path=/; max-age=${3600 * 24}; samesite=lax`;
-      
+
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
@@ -323,7 +395,7 @@ export default function Dashboard() {
           {Array.from({ length: TOTAL_SLIDES }).map((_, i) => (
             <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
               {i === activeIndex && (
-                <motion.div
+                <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: isPaused ? undefined : "100%" }}
                   transition={{ duration: SLIDE_DURATION / 1000, ease: "linear" }}
@@ -337,16 +409,16 @@ export default function Dashboard() {
 
         {/* Navigation Overlays */}
         <div className="absolute inset-0 z-40 flex">
-          <div
-            className="w-[30%] h-full cursor-pointer"
+          <div 
+            className="w-[30%] h-full cursor-pointer" 
             onClick={prevSlide}
             onMouseDown={() => setIsPaused(true)}
             onMouseUp={() => setIsPaused(false)}
             onTouchStart={() => setIsPaused(true)}
             onTouchEnd={() => setIsPaused(false)}
           />
-          <div
-            className="w-[70%] h-full cursor-pointer"
+          <div 
+            className="w-[70%] h-full cursor-pointer" 
             onClick={nextSlide}
             onMouseDown={() => setIsPaused(true)}
             onMouseUp={() => setIsPaused(false)}
@@ -358,26 +430,29 @@ export default function Dashboard() {
         {/* Slides Content */}
         <div className="relative h-full z-30">
           <AnimatePresence mode="wait">
-            {activeIndex === 0 && <SlideIntro key="0" data={data} />}
-            {activeIndex === 1 && <SlideConsistency key="1" data={data} />}
-            {activeIndex === 2 && <SlideStack key="2" data={data} />}
-            {activeIndex === 3 && <SlideNetwork key="3" data={data} />}
-            {activeIndex === 4 && <SlideArchetype key="4" data={data} />}
-            {activeIndex === 5 && <SlideRoast key="5" data={data} />}
-            {activeIndex === 6 && <SlideSummary key="6" data={data} onLogout={handleLogout} />}
+            {activeIndex === 0 && <SlideWeeklySummary key="0" data={data} />}
+            {activeIndex === 1 && <SlideIntro key="1" data={data} />}
+            {activeIndex === 2 && <SlideConsistency key="2" data={data} />}
+            {activeIndex === 3 && <SlideHeatmap key="3" data={data} />}
+            {activeIndex === 4 && <SlideStack key="4" data={data} />}
+            {activeIndex === 5 && <SlideNetwork key="5" data={data} />}
+            {activeIndex === 6 && <SlideArchetype key="6" data={data} />}
+            {activeIndex === 7 && <SlideRoast key="7" data={data} />}
+            {activeIndex === 8 && <SlideSummary key="8" data={data} onLogout={handleLogout} />}
           </AnimatePresence>
         </div>
 
         {/* Desktop Navigation Hints */}
         <div className="hidden md:flex absolute bottom-8 left-0 right-0 justify-center gap-12 z-50 pointer-events-none opacity-20">
-          <div className="flex items-center gap-2 text-white font-mono text-[10px] tracking-widest">
-            <ChevronLeft size={14} /> TAP LEFT
-          </div>
-          <div className="flex items-center gap-2 text-white font-mono text-[10px] tracking-widest">
-            TAP RIGHT <ChevronRight size={14} />
-          </div>
+           <div className="flex items-center gap-2 text-white font-mono text-[10px] tracking-widest">
+             <ChevronLeft size={14} /> TAP LEFT
+           </div>
+           <div className="flex items-center gap-2 text-white font-mono text-[10px] tracking-widest">
+             TAP RIGHT <ChevronRight size={14} />
+           </div>
         </div>
       </div>
     </div>
   );
 }
+
