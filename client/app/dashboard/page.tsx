@@ -412,7 +412,7 @@ export default function Dashboard() {
         </div>
 
         {/* Navigation Overlays */}
-        <div className="absolute inset-0 z-30 flex">
+        <div className="absolute inset-0 z-40 flex">
           <div 
             className="w-[30%] h-full cursor-pointer" 
             onClick={prevSlide}
@@ -432,7 +432,7 @@ export default function Dashboard() {
         </div>
 
         {/* Slides Content */}
-        <div className="relative h-full z-40">
+        <div className="relative h-full z-50 pointer-events-none">
           <AnimatePresence mode="wait">
             {activeIndex === 0 && <SlideWeeklySummary key="0" data={data} />}
             {activeIndex === 1 && <SlideIntro key="1" data={data} />}
