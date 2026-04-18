@@ -21,6 +21,41 @@ async def generate_roast_gemini(stats: Dict[str, Any], archetype: str, prompt: s
         print(f"Gemini Fallback Error: {e}")
         return "You code so much that even my AI brain is tired. Go outside."
 
+async def generate_weekly_review(stats: Dict[str, Any]) -> str:
+    heatmap = stats.get('last_week_heatmap', [])
+    total_last_week = sum(heatmap)
+    active_days_last_week = len([d for d in heatmap if d > 0])
+    
+    prompt = f"""
+    You are a helpful, professional technical lead. 
+    Summarize this developer's activity for the LAST 7 DAYS.
+
+    DATA:
+    - Total contributions in last 7 days: {total_last_week}
+    - Number of active days: {active_days_last_week}
+    - Daily distribution: {heatmap} (Starting from Sunday)
+
+    INSTRUCTIONS:
+    1. Acknowledge the consistency (or lack thereof) in the last week.
+    2. Keep it encouraging but realistic.
+    3. Keep it to 2 small sentences max.
+    4. Focus on the "Rhythm" of the week.
+    """
+    
+    try:
+        completion = await groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": "You are a technical lead giving a weekly sync."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200
+        )
+        return completion.choices[0].message.content.strip()
+    except Exception:
+        # Fallback to a simple static review if AI fails
+        return f"You had {total_last_week} contributions over {active_days_last_week} days this week. Keep that momentum going!"
+
 async def generate_roast(stats: Dict[str, Any], archetype: str) -> str:
     languages = ', '.join(stats.get('top_languages', []))
     social = stats.get('social_ratio', '0/0')

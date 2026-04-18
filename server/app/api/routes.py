@@ -135,15 +135,21 @@ async def callback(request: Request, code: str, state: str,
         template_stmt = select(UserTemplates).where(UserTemplates.user_id == github_id)
         template_res = await db.execute(template_stmt)
         template = template_res.scalar_one_or_none()
-        ai_roast = await generate_roast(processed_insights["stats"], user.archetype)
+        
+        # Parallel AI generation
+        ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
+        weekly_review_task = generate_weekly_review(processed_insights["stats"])
+        ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
 
         if template:
             template.stats_json = processed_insights["stats"]
             template.display_json = ai_roast if ai_roast else {}
+            template.weekly_review = weekly_review
         else:
             template = UserTemplates(user_id = github_id,
                                     stats_json = processed_insights["stats"],
-                                    display_json = ai_roast if ai_roast else {})
+                                    display_json = ai_roast if ai_roast else {},
+                                    weekly_review = weekly_review)
             db.add(template) 
     
         
@@ -217,6 +223,7 @@ async def get_user_insights(
         "archetype": user.archetype,
         "stats": template.stats_json if template else {},
         "display_json": template.display_json if template else {},
+        "weekly_review": template.weekly_review if template else None,
         "updated_at": user.updated_at.isoformat()
     }
     await redis.setex(cached_key, 3600*24, json.dumps(response_data, default=str))
