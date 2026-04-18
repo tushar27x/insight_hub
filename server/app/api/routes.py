@@ -119,18 +119,22 @@ async def callback(request: Request, code: str, state: str,
 
         # 4. Database Sync (Upsert)
         try:
+            print(f"Starting DB sync for {github_login} ({github_id})")
             github_stats = await fetch_github_stats(github_token, github_login)
             processed_insights = calculate_user_insights(github_stats)
+            print(f"Processed insights for {github_login}")
             
             stmt = select(UserInsights).where(UserInsights.user_id == github_id)
             result = await db.execute(stmt)
             user = result.scalar_one_or_none()
             
             if user:
+                print(f"Updating existing user: {github_login}")
                 user.user_name = github_login
                 user.archetype = processed_insights["archetype"]
                 user.updated_at = datetime.now(UTC).replace(tzinfo=None)
             else:
+                print(f"Creating new user: {github_login}")
                 user = UserInsights(user_id=github_id, user_name=github_login)
                 user.archetype = processed_insights["archetype"]
                 db.add(user)
@@ -140,15 +144,19 @@ async def callback(request: Request, code: str, state: str,
             template = template_res.scalar_one_or_none()
             
             # Parallel AI generation
+            print("Generating AI roast and weekly review...")
             ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
             weekly_review_task = generate_weekly_review(processed_insights["stats"])
             ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
+            print("AI generation complete")
 
             if template:
+                print(f"Updating template for user: {github_id}")
                 template.stats_json = processed_insights["stats"]
                 template.display_json = ai_roast if ai_roast else {}
                 template.weekly_review = weekly_review
             else:
+                print(f"Creating new template for user: {github_id}")
                 template = UserTemplates(user_id = github_id,
                                         stats_json = processed_insights["stats"],
                                         display_json = ai_roast if ai_roast else {},
@@ -156,8 +164,11 @@ async def callback(request: Request, code: str, state: str,
                 db.add(template) 
         
             await db.commit()
+            print(f"Successfully committed changes for {github_login}")
         except Exception as e:
-            print(f"Database Sync Error: {e}")
+            import traceback
+            print(f"Database Sync Error for {github_login}: {e}")
+            traceback.print_exc()
             await db.rollback()
             # We don't raise here so the user can still get their token
         
