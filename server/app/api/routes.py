@@ -162,8 +162,8 @@ async def callback(request: Request, code: str, state: str,
             value=app_token,
             httponly=True,
             max_age=3600 * 24, # 24 hours
-            samesite="lax",
-            secure=ENV == "production" # Set to True in production (HTTPS)
+            samesite="none",
+            secure=True 
         )
         response.delete_cookie("oauth_state")
         
