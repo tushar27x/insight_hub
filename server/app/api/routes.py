@@ -23,7 +23,7 @@ router = APIRouter()
 
 def _backend_base_url(request: Request) -> str:
     configured = (BACKEND_URL or "").strip().rstrip("/")
-    if configured and configured != "http://localhost:8000":
+    if configured:
         return configured
 
     forwarded_proto = request.headers.get("x-forwarded-proto")
@@ -68,7 +68,7 @@ async def login(request: Request):
         httponly = True,
         max_age = 600,
         samesite = "lax",
-        secure = True  # set True in production (HTTPS)  
+        secure = ENV == "production"  # Only True in production (HTTPS)  
     )
     return response
 
