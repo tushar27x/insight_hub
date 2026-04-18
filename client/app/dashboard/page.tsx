@@ -208,10 +208,10 @@ export default function Dashboard() {
               <span style={monoLabel}>GitHub Retrospective · 2026</span>
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
               whileTap={{ scale: 0.95 }}
               onClick={handleLogout}
-              className="text-[10px] uppercase tracking-[0.2em] text-white/30 hover:text-white transition-colors border border-white/10 px-3 py-1.5 rounded-full hover:bg-white/5"
+              className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70 hover:text-white transition-all border border-white/20 px-4 py-2 rounded-full backdrop-blur-sm"
             >
               Logout
             </motion.button>
