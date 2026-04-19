@@ -1,27 +1,33 @@
 # 🚀 Insights Hub: GitHub Wrapped
 
-A visually stunning, AI-powered retrospective of your GitHub contribution year. Insights Hub transforms raw code activity into interactive, shareable "Wrapped" slides using a high-performance FastAPI backend and an immersive Next.js frontend.
+A visually stunning, AI-powered retrospective of your GitHub contribution activity. Insights Hub transforms raw code data into a cinematic, interactive "Story" experience using a high-performance FastAPI backend and a modern Next.js frontend.
 
 ---
 
 ## ✨ Core Features
 
-### **1. Developer Archetypes**
-Our "Insight Engine" analyzes your contribution DNA to classify you into unique personas:
-- **🛡️ The Weekend Warrior**: High Saturday/Sunday activity (Implemented).
-- **💻 The Code Crusader**: Consistent weekday contributor.
-- **🦉 The Night Owl**: (Planned) High activity during 10 PM - 4 AM.
-- **🦋 The Social Butterfly**: (Planned) Contributions spread across many organizations.
+### **1. Instagram Stories-style Dashboard**
+Your year in code is now a 9-slide cinematic journey:
+- **Slide 1: Weekly Sync**: A professional summary of your last 7 days.
+- **Slide 2: Personal Intro**: Total commits and PRs reveal.
+- **Slide 3: Consistency**: Your active contribution days tracked.
+- **Slide 4: Weekly Rhythm**: Emerald-themed heatmap of your recent activity.
+- **Slide 5: Weapon of Choice**: Your top 5 most used languages.
+- **Slide 6: Social Connectivity**: Solo vs. collaborative commit ratio.
+- **Slide 7: Archetype Reveal**: Your assigned developer persona (e.g., Weekend Warrior).
+- **Slide 8: Architect Review**: A technical, witty AI roast of your code habits.
+- **Slide 9: Retrospective Card**: A dense summary for sharing.
 
-### **2. AI-Powered "Roasts"**
-A dual-engine AI service (Groq Llama 3 & Google Gemini 1.5/2.0) that acts as a "Senior Software Architect" to deliver sharp, technical, and highly personalized roasts based on your specific stats, languages, and social ratio.
+### **2. AI-Powered "Roasts" & Reviews**
+Dual AI engines analyze your stats to provide:
+- **Architect Review**: A sharp, developer-centric roast.
+- **Weekly Sync**: A professional summary of your recent rhythm as a "Tech Lead".
 
-### **3. Immersive "Wrapped" UI**
-A premium frontend experience featuring:
-- **Cinematic Visuals**: Animated background gradients and grainy noise textures.
-- **Bento Grid Layout**: Modern masonry-style stats display.
-- **Glassmorphism**: High-end blurred containers for AI insights.
-- **Fluid Animations**: Staggered entry effects powered by Framer Motion.
+### **3. Immersive UX**
+- **Mobile First**: Optimized for a native-feeling story experience on mobile devices.
+- **Desktop Adaptation**: Constrained phone-frame layout on large screens for visual impact.
+- **Interactive Navigation**: Tap to advance/rewind and hold-to-pause functionality.
+- **Cinematic Backgrounds**: Fluid gradients, grainy noise textures, and floating UI elements.
 
 ---
 
@@ -31,64 +37,33 @@ A premium frontend experience featuring:
 - **Language**: Python 3.12+
 - **Database**: PostgreSQL with **SQLModel** (Async).
 - **Caching**: **Redis** for 24-hour fast-pass data retrieval.
-- **Auth**: Secure GitHub OAuth with **HttpOnly JWT sessions**.
+- **Auth**: Secure GitHub OAuth with **Authorization Header Bearer tokens**.
+- **Cross-Domain**: Specialized handshake for multi-platform (Koyeb/Vercel) deployments.
 - **AI Engines**: 
   - **Groq**: Llama 3.3 70B (Primary).
   - **Google GenAI**: Gemini 1.5 Flash (Fallback).
 - **Data**: GitHub GraphQL API (v4) for surgical data fetching.
 
 ### **Frontend (Next.js)**
-- **Framework**: Next.js 15+ (App Router, TypeScript).
-- **Styling**: **Tailwind CSS v4** (Modern CSS-first approach).
-- **Components**: **Shadcn UI** foundation.
-- **Animations**: **Framer Motion**.
-- **Icons**: Lucide React.
+- **Framework**: Next.js 16+ (Turbopack, TypeScript).
+- **Middleware**: Server-side route protection and redirection.
+- **Styling**: **Tailwind CSS v4** & **Shadcn UI**.
+- **Animations**: **Framer Motion** for fluid story transitions.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture & Deployment
 
-### **Data Refresh Strategy**
-To balance performance with data freshness:
-1.  **Redis Hit**: Returns cached insights in <50ms.
-2.  **Postgres Hit**: If Redis misses, checks the last sync time.
-3.  **7-Day Refresh**: If data is >7 days old, the system automatically triggers a fresh GitHub fetch and AI generation pipeline.
+### **Multi-Platform Deployment Handshake**
+Since the frontend and backend are on different domains (Vercel and Koyeb), we've implemented a robust authentication handshake:
+1.  **Backend Redirect**: Passes the session token via a temporary query parameter to the dashboard.
+2.  **Frontend Sync**: Dashboard captures the token and stores it in `localStorage` for API calls and `Cookie` for Middleware.
+3.  **Authorization Interceptor**: Axios automatically attaches the `Bearer` token to all requests, bypassing cross-site cookie restrictions.
 
-### **Database Schema**
-- **`UserInsights`**: Stores metadata, archetypes, and encrypted tokens.
-- **`UserTemplates`**: Stores heavy JSON payloads (`stats_json`, `display_json`) for the "Wrapped" experience.
-
----
-
-## 🚀 Getting Started
-
-### **Backend Setup**
-1. Navigate to `/server`.
-2. Create a `.env` file with:
-   ```env
-   DATABASE_URL=postgresql+asyncpg://...
-   REDIS_URL=redis://localhost:6379
-   GITHUB_CLIENT_ID=your_id
-   GITHUB_CLIENT_SECRET=your_secret
-   JWT_SECRET=your_jwt_secret
-   GEMINI_API_KEY=your_gemini_key
-   GROQ_API_KEY=your_groq_key
-   ```
-3. Install dependencies: `pip install -r requirements.txt`.
-4. Start the server: `fastapi dev app/main.py`.
-
-### **Frontend Setup**
-1. Navigate to `/client`.
-2. Install dependencies: `npm install`.
-3. Start the dev server: `npm run dev`.
-4. Visit `http://localhost:3000`.
-
----
-
-## ✅ Project Status: Complete
+### **Project Status: 🎉 Complete**
 - [x] Phase 1: Backend Foundation (OAuth, GraphQL, DB, Redis).
 - [x] Phase 2: AI Integration (Roast Engine, Prompt Engineering).
-- [x] Phase 3: Frontend Immersive UI (Next.js, Framer Motion, Tailwind v4).
-- [x] Phase 4: Production Polish (CORS, Timezone handling, Error fallback).
+- [x] Phase 3: Immersive Story UI (Instagram Stories Layout).
+- [x] Phase 4: Production Polish (Cross-domain Auth, Error handling).
 
 Built with ❤️ for the global developer community.
