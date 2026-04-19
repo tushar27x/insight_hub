@@ -55,7 +55,7 @@ Dual AI engines analyze your stats to provide:
 ## 🏗️ Architecture & Deployment
 
 ### **Multi-Platform Deployment Handshake**
-Since the frontend and backend are on different domains (Vercel and Koyeb), we've implemented a robust authentication handshake:
+Since the frontend and backend are on different domains (Vercel and Koyeb), I've implemented a robust authentication handshake:
 1.  **Backend Redirect**: Passes the session token via a temporary query parameter to the dashboard.
 2.  **Frontend Sync**: Dashboard captures the token and stores it in `localStorage` for API calls and `Cookie` for Middleware.
 3.  **Authorization Interceptor**: Axios automatically attaches the `Bearer` token to all requests, bypassing cross-site cookie restrictions.
