@@ -173,7 +173,10 @@ function SlideHeatmap({ data }: { data: UserInsights }) {
         ))}
       </div>
 
-      <p className="text-white/30 font-mono text-[10px] tracking-widest uppercase">Your rhythm in the last week.</p>
+      <div className="space-y-2">
+        <p className="text-white/30 font-mono text-[10px] tracking-widest uppercase">Your rhythm in the last week.</p>
+        <p className="text-emerald-400/50 font-mono text-[9px] tracking-widest uppercase bg-emerald-400/5 px-3 py-1 rounded-full border border-emerald-400/10">Graphs are updated weekly (7 days)</p>
+      </div>
     </motion.div>
   );
 }
