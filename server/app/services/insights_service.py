@@ -33,12 +33,22 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             if day.get("contributionCount", 0) > 0:
                 active_days += 1
 
-    # Extract last week's heatmap
+    # Extract last 7 days heatmap
     last_week_heatmap = []
+    heatmap_labels = []
+    
     if weeks:
-        # Flatten all days and take the last 7
+        # Flatten all days to find the most recent 7 days
         all_days = [day for week in weeks for day in week.get("contributionDays", [])]
-        last_week_heatmap = [day.get("contributionCount", 0) for day in all_days[-7:]]
+        
+        # Take the last 7 days
+        last_7_days = all_days[-7:]
+        last_week_heatmap = [day.get("contributionCount", 0) for day in last_7_days]
+        
+        # Generate labels for these specific 7 days
+        for day in last_7_days:
+            dt = datetime.strptime(day.get("date"), "%Y-%m-%d")
+            heatmap_labels.append(dt.strftime("%a")) # 'Mon', 'Tue', etc.
 
     archetype = determine_archetype(raw_github_stats, total_commits, total_prs)
     
@@ -51,7 +61,8 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             "total_stars": total_stars,
             "active_days_per_year": active_days,
             "social_ratio": f"{followers}/{following}",
-            "last_week_heatmap": last_week_heatmap
+            "last_week_heatmap": last_week_heatmap,
+            "heatmap_labels": heatmap_labels
         },
         "archetype": archetype
     }
