@@ -33,22 +33,40 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
             if day.get("contributionCount", 0) > 0:
                 active_days += 1
 
-    # Extract last 7 days heatmap
+    # Extract last 7 days heatmap with robust sorting and alignment
     last_week_heatmap = []
     heatmap_labels = []
     
     if weeks:
-        # Flatten all days to find the most recent 7 days
-        all_days = [day for week in weeks for day in week.get("contributionDays", [])]
+        # Flatten all days and ensure they are sorted by date
+        all_days = []
+        for week in weeks:
+            for day in week.get("contributionDays", []):
+                if day.get("date"):
+                    all_days.append(day)
         
-        # Take the last 7 days
+        # Sort by date to ensure consistency
+        all_days.sort(key=lambda x: x.get("date"))
+        
+        # Take the most recent 7 days
         last_7_days = all_days[-7:]
-        last_week_heatmap = [day.get("contributionCount", 0) for day in last_7_days]
         
-        # Generate labels for these specific 7 days
+        # Strictly align counts and labels
         for day in last_7_days:
-            dt = datetime.strptime(day.get("date"), "%Y-%m-%d")
+            count = day.get("contributionCount", 0)
+            date_str = day.get("date")
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            
+            last_week_heatmap.append(count)
             heatmap_labels.append(dt.strftime("%a")) # 'Mon', 'Tue', etc.
+            
+        # Ensure we always return exactly 7 days
+        if len(last_week_heatmap) < 7:
+            # This should rarely happen with GitHub activity over a year, 
+            # but we pad with 0s if necessary.
+            while len(last_week_heatmap) < 7:
+                last_week_heatmap.insert(0, 0)
+                heatmap_labels.insert(0, "N/A")
 
     archetype = determine_archetype(raw_github_stats, total_commits, total_prs)
     

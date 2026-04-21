@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -143,8 +143,26 @@ function SlideConsistency({ data }: { data: UserInsights }) {
 
 /* ─── SLIDE 3: HEATMAP (LAST WEEK) ─── */
 function SlideHeatmap({ data }: { data: UserInsights }) {
-  const defaultLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const labels = data.stats.heatmap_labels || defaultLabels;
+  // Robust label generation: 
+  // 1. Use heatmap_labels from backend if available.
+  // 2. Fallback: Generate labels by working backwards from updated_at.
+  const labels = useMemo(() => {
+    if (data.stats.heatmap_labels && data.stats.heatmap_labels.length === 7) {
+      return data.stats.heatmap_labels;
+    }
+    
+    // Fallback logic: Generate labels for the 7 days ending at data.updated_at
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const updatedDate = new Date(data.updated_at);
+    const fallback = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(updatedDate);
+      d.setDate(d.getDate() - i);
+      fallback.push(dayNames[d.getDay()]);
+    }
+    return fallback;
+  }, [data.stats.heatmap_labels, data.updated_at]);
+
   const maxContributions = Math.max(...data.stats.last_week_heatmap, 1);
 
   return (
