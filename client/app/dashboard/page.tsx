@@ -28,6 +28,7 @@ interface UserInsights {
     active_days_per_year: number;
     social_ratio: string;
     last_week_heatmap: number[];
+    heatmap_labels?: string[];
   };
   display_json?: string;
   weekly_review?: string;
@@ -142,7 +143,8 @@ function SlideConsistency({ data }: { data: UserInsights }) {
 
 /* ─── SLIDE 3: HEATMAP (LAST WEEK) ─── */
 function SlideHeatmap({ data }: { data: UserInsights }) {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const defaultLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const labels = data.stats.heatmap_labels || defaultLabels;
   const maxContributions = Math.max(...data.stats.last_week_heatmap, 1);
 
   return (
@@ -166,7 +168,7 @@ function SlideHeatmap({ data }: { data: UserInsights }) {
               className="w-full bg-emerald-500 rounded-t-lg min-h-[4px]"
               style={{ opacity: count === 0 ? 0.1 : 0.3 + (count / maxContributions) * 0.7 }}
             />
-            <span className="text-[10px] font-mono text-white/40 uppercase rotate-45 mt-2">{days[i]}</span>
+            <span className="text-[10px] font-mono text-white/40 uppercase rotate-45 mt-2">{labels[i]}</span>
           </div>
         ))}
       </div>
