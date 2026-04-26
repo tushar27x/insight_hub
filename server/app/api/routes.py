@@ -14,6 +14,7 @@ from app.services.github_service import fetch_github_stats
 from app.services.insights_service import calculate_user_insights 
 from app.core.security import decode_access_token
 from app.services.ai_service import generate_roast, generate_weekly_review
+from fastapi_limiter.dependencies import RateLimiter
 import secrets
 import httpx
 import asyncio
@@ -48,7 +49,7 @@ async def test(db: AsyncSession = Depends(get_db),
         "postgres": result.scalar()
     }
     
-@router.get("/auth/login")
+@router.get("/auth/login", dependencies=[Depends(RateLimiter(times = 5, seconds = 60))])
 async def login(request: Request):
     state = secrets.token_urlsafe(32)
     callback_url = f"{_backend_base_url(request)}/api/auth/callback"
@@ -73,7 +74,7 @@ async def login(request: Request):
     )
     return response
 
-@router.get("/auth/callback")
+@router.get("/auth/callback", dependencies = [Depends(RateLimiter(times = 5, seconds = 60))])
 async def callback(request: Request, code: str, state: str, 
                    db: AsyncSession = Depends(get_db)):
     # 1. Verify State from Cookie
@@ -119,52 +120,62 @@ async def callback(request: Request, code: str, state: str,
 
         # 4. Database Sync (Upsert)
         try:
-            print(f"Starting DB sync for {github_login} ({github_id})")
-            github_stats = await fetch_github_stats(github_token, github_login)
-            processed_insights = calculate_user_insights(github_stats)
-            print(f"Processed insights for {github_login}")
-            
             stmt = select(UserInsights).where(UserInsights.user_id == github_id)
             result = await db.execute(stmt)
             user = result.scalar_one_or_none()
             
-            if user:
-                print(f"Updating existing user: {github_login}")
-                user.user_name = github_login
-                user.archetype = processed_insights["archetype"]
-                user.updated_at = datetime.now(UTC).replace(tzinfo=None)
-            else:
-                print(f"Creating new user: {github_login}")
-                user = UserInsights(user_id=github_id, user_name=github_login)
-                user.archetype = processed_insights["archetype"]
-                db.add(user)
-            
-            template_stmt = select(UserTemplates).where(UserTemplates.user_id == github_id)
-            template_res = await db.execute(template_stmt)
-            template = template_res.scalar_one_or_none()
-            
-            # Parallel AI generation
-            print("Generating AI roast and weekly review...")
-            ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
-            weekly_review_task = generate_weekly_review(processed_insights["stats"])
-            ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
-            print("AI generation complete")
+            should_sync = True
+            if user and user.updated_at:
+                last_update = user.updated_at.replace(tzinfo=UTC) if user.updated_at.tzinfo is None else user.updated_at
+                days_since_update = (datetime.now(UTC) - last_update).days
+                if days_since_update < 7:
+                    should_sync = False
+                    print(f"Skipping sync: Data for {github_login} is only {days_since_update} days old.")
 
-            if template:
-                print(f"Updating template for user: {github_id}")
-                template.stats_json = processed_insights["stats"]
-                template.display_json = ai_roast if ai_roast else {}
-                template.weekly_review = weekly_review
-            else:
-                print(f"Creating new template for user: {github_id}")
-                template = UserTemplates(user_id = github_id,
-                                        stats_json = processed_insights["stats"],
-                                        display_json = ai_roast if ai_roast else {},
-                                        weekly_review = weekly_review)
-                db.add(template) 
-        
-            await db.commit()
-            print(f"Successfully committed changes for {github_login}")
+            if should_sync:
+                print(f"Starting fresh sync for {github_login}...")
+                github_stats = await fetch_github_stats(github_token, github_login)
+                processed_insights = calculate_user_insights(github_stats)
+                print(f"Processed insights for {github_login}")
+            
+            
+                if user:
+                    print(f"Updating existing user: {github_login}")
+                    user.user_name = github_login
+                    user.archetype = processed_insights["archetype"]
+                    user.updated_at = datetime.now(UTC).replace(tzinfo=None)
+                else:
+                    print(f"Creating new user: {github_login}")
+                    user = UserInsights(user_id=github_id, user_name=github_login)
+                    user.archetype = processed_insights["archetype"]
+                    db.add(user)
+            
+                template_stmt = select(UserTemplates).where(UserTemplates.user_id == github_id)
+                template_res = await db.execute(template_stmt)
+                template = template_res.scalar_one_or_none()
+                
+                # Parallel AI generation
+                print("Generating AI roast and weekly review...")
+                ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
+                weekly_review_task = generate_weekly_review(processed_insights["stats"])
+                ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
+                print("AI generation complete")
+
+                if template:
+                    print(f"Updating template for user: {github_id}")
+                    template.stats_json = processed_insights["stats"]
+                    template.display_json = ai_roast if ai_roast else {}
+                    template.weekly_review = weekly_review
+                else:
+                    print(f"Creating new template for user: {github_id}")
+                    template = UserTemplates(user_id = github_id,
+                                            stats_json = processed_insights["stats"],
+                                            display_json = ai_roast if ai_roast else {},
+                                            weekly_review = weekly_review)
+                    db.add(template) 
+            
+                await db.commit()
+                print(f"Successfully committed changes for {github_login}")
         except Exception as e:
             import traceback
             print(f"Database Sync Error for {github_login}: {e}")
@@ -189,7 +200,7 @@ async def logout():
     response.delete_cookie("session_token")
     return response
 
-@router.get("/user/insights")
+@router.get("/user/insights", dependencies = [Depends(RateLimiter(times = 20, seconds = 60))])
 async def get_user_insights(
     request: Request,
     db: AsyncSession = Depends(get_db),

@@ -6,6 +6,10 @@ from cryptography.fernet import Fernet
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 # 24 hours
 
+# Initialize Fernet cipher suite
+# Ensure ENCRYPTION_TOKEN is a valid base64-encoded 32-byte key
+cipher_suite = Fernet(ENCRYPTION_TOKEN.encode()) if ENCRYPTION_TOKEN else None
+
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """
     Creates a signed JWT for the user's session.
@@ -30,7 +34,11 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 def encrypt_token(token: str) -> str:
-    return Fernet.encrypt(token)
+    if not cipher_suite:
+        raise ValueError("ENCRYPTION_TOKEN not configured")
+    return cipher_suite.encrypt(token.encode()).decode()
 
 def decrypt_token(encrypted_token: str) -> str:
-    return Fernet.decrypt(encrypted_token)
+    if not cipher_suite:
+        raise ValueError("ENCRYPTION_TOKEN not configured")
+    return cipher_suite.decrypt(encrypted_token.encode()).decode()
