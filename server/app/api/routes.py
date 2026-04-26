@@ -14,7 +14,7 @@ from app.services.github_service import fetch_github_stats
 from app.services.insights_service import calculate_user_insights 
 from app.core.security import decode_access_token
 from app.services.ai_service import generate_roast, generate_weekly_review
-from fastapi_limiter.dependencies import RateLimiter
+from fastapi_limiter.depends import RateLimiter
 import secrets
 import httpx
 import asyncio
