@@ -22,18 +22,59 @@ query GetUserInsights($login: String!) {
     repositories(first: 5, orderBy: {field: STARGAZERS,
       direction: DESC}) {
         nodes {
-        name
-        stargazerCount
-        languages(first: 3) {
+          name
+          stargazerCount
+          languages(first: 3) {
             nodes {
             name
             }
-        }
+          }
+          defaultBranchRef {
+            target {
+              ... on Commit {
+                history(first: 5) {
+                  nodes {
+                    message
+                  }
+                }
+              }
+            }
+          }
+          readme: object(expression: "HEAD:README.md") {
+            ... on Blob {
+              text
+            }
+          }
+          tree: object(expression: "HEAD:") {
+            ... on Tree {
+              entries {
+                name
+                type
+              }
+            }
+          }
         }
     }
 
+    pullRequests(first: 10, orderBy: {field: CREATED_AT, direction: DESC}) {
+      nodes {
+        additions
+        deletions
+        title
+      }
+    }
+
     contributionsCollection {
+      commitContributionsByRepository(maxRepositories: 5) {
+        repository {
+          name
+        }
+        contributions {
+          totalCount
+        }
+      }
       contributionCalendar {
+
         totalContributions
         weeks {
           contributionDays {
@@ -64,7 +105,8 @@ async def fetch_github_stats(token: str, username: str):
         "variables": {"login": username}
     }
     
-    async with httpx.AsyncClient(timeout = 10.0) as client:
+    async with httpx.AsyncClient(timeout = 30.0) as client:
+
         response = await client.post(
             GITHUB_GRAPHQL_URL,
             json=payload,

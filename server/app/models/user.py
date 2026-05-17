@@ -29,6 +29,7 @@ class UserTemplates(SQLModel, table=True):
     stats_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     display_json: Dict[str, Any] = Field(default={}, sa_column=Column(JSON))
     weekly_review: Optional[str] = Field(default=None)
+    craft_review: Optional[str] = Field(default=None)
     version: str = Field(default="v1")
     
     user: Optional[UserInsights] = Relationship(back_populates="template")

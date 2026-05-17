@@ -13,7 +13,7 @@ from app.core.security import create_access_token
 from app.services.github_service import fetch_github_stats
 from app.services.insights_service import calculate_user_insights 
 from app.core.security import decode_access_token
-from app.services.ai_service import generate_roast, generate_weekly_review
+from app.services.ai_service import generate_roast, generate_weekly_review, generate_repo_summaries, generate_craft_review
 from fastapi_limiter.depends import RateLimiter
 import secrets
 import httpx
@@ -76,7 +76,8 @@ async def login(request: Request):
 
 @router.get("/auth/callback", dependencies = [Depends(RateLimiter(times = 5, seconds = 60))])
 async def callback(request: Request, code: str, state: str, 
-                   db: AsyncSession = Depends(get_db)):
+                   db: AsyncSession = Depends(get_db),
+                   redis = Depends(get_redis)):
     # 1. Verify State from Cookie
     cookie_state = request.cookies.get("oauth_state")  
     if not cookie_state or cookie_state != state:
@@ -155,27 +156,53 @@ async def callback(request: Request, code: str, state: str,
                 template = template_res.scalar_one_or_none()
                 
                 # Parallel AI generation
-                print("Generating AI roast and weekly review...")
+                print("Generating AI roast, weekly review, repo summaries, and craft review...")
                 ai_roast_task = generate_roast(processed_insights["stats"], user.archetype)
                 weekly_review_task = generate_weekly_review(processed_insights["stats"])
-                ai_roast, weekly_review = await asyncio.gather(ai_roast_task, weekly_review_task)
-                print("AI generation complete")
+                repo_summaries_task = generate_repo_summaries(processed_insights["stats"].get("repo_details", []))
+                craft_review_task = generate_craft_review(processed_insights["stats"])
+                
+                results = await asyncio.gather(
+                    ai_roast_task, 
+                    weekly_review_task,
+                    repo_summaries_task,
+                    craft_review_task,
+                    return_exceptions=True
+                )
+                
+                ai_roast = results[0] if not isinstance(results[0], Exception) else "Technical evaluation pending."
+                weekly_review = results[1] if not isinstance(results[1], Exception) else "Activity analysis in progress."
+                repo_summaries = results[2] if not isinstance(results[2], Exception) else {}
+                craft_review = results[3] if not isinstance(results[3], Exception) else "Code quality audit scheduled."
+                
+                print("AI generation complete (with resilient error handling)")
+
+                # Attach summaries to ranked repos for the frontend
+                for repo in processed_insights["stats"].get("ranked_repos", []):
+                    repo["summary"] = repo_summaries.get(repo["name"], "Exploration of technical concepts and implementations.") if isinstance(repo_summaries, dict) else "Exploration of technical concepts."
 
                 if template:
                     print(f"Updating template for user: {github_id}")
                     template.stats_json = processed_insights["stats"]
                     template.display_json = ai_roast if ai_roast else {}
                     template.weekly_review = weekly_review
+                    template.craft_review = craft_review
                 else:
                     print(f"Creating new template for user: {github_id}")
                     template = UserTemplates(user_id = github_id,
                                             stats_json = processed_insights["stats"],
                                             display_json = ai_roast if ai_roast else {},
-                                            weekly_review = weekly_review)
+                                            weekly_review = weekly_review,
+                                            craft_review = craft_review)
                     db.add(template) 
             
                 await db.commit()
                 print(f"Successfully committed changes for {github_login}")
+                
+                # Invalidate Redis Cache
+                user_id_int = int(github_id)
+                await redis.delete(f"user_insights:{user_id_int}")
+                print(f"Invalidated Redis cache for {github_login}")
         except Exception as e:
             import traceback
             print(f"Database Sync Error for {github_login}: {e}")
@@ -252,6 +279,7 @@ async def get_user_insights(
         "stats": template.stats_json if template else {},
         "display_json": template.display_json if template else {},
         "weekly_review": template.weekly_review if template else None,
+        "craft_review": template.craft_review if template else None,
         "updated_at": user.updated_at.isoformat()
     }
     await redis.setex(cached_key, 3600*24, json.dumps(response_data, default=str))

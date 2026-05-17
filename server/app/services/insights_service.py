@@ -8,8 +8,36 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
     total_prs = contributions.get("totalPullRequestContributions", 0)
     total_issues = contributions.get("totalIssueContributions", 0)
     
-    lang_count = {}
+    # 1. Extract Ranked Repositories
+    repo_contributions = contributions.get("commitContributionsByRepository", [])
+    ranked_repos = sorted([
+        {"name": rc["repository"]["name"], "count": rc["contributions"]["totalCount"]}
+        for rc in repo_contributions
+    ], key=lambda x: x["count"], reverse=True)
+
+    # 2. Extract Repo Details for AI
     repos = raw_github_stats.get("repositories", {}).get("nodes", [])
+    repo_details = []
+    recent_commits = []
+    for repo in repos:
+        # Extract recent commits
+        history = repo.get("defaultBranchRef", {}).get("target", {}).get("history", {}).get("nodes", [])
+        for c in history:
+            if c.get("message"):
+                recent_commits.append(c["message"])
+
+        repo_details.append({
+            "name": repo["name"],
+            "readme": repo.get("readme", {}).get("text", "") if repo.get("readme") else "",
+            "files": [e["name"] for e in repo.get("tree", {}).get("entries", [])] if repo.get("tree") else []
+        })
+
+    # 3. Code Churn
+    pr_nodes = raw_github_stats.get("pullRequests", {}).get("nodes", [])
+    total_additions = sum((pr.get("additions") or 0) for pr in pr_nodes)
+    total_deletions = sum((pr.get("deletions") or 0) for pr in pr_nodes)
+
+    lang_count = {}
     total_stars = sum(r.get("stargazerCount", 0) for r in repos)
     
     for repo in repos:
@@ -68,18 +96,42 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
                 last_week_heatmap.insert(0, 0)
                 heatmap_labels.insert(0, "N/A")
 
-    archetype = determine_archetype(raw_github_stats, total_commits, total_prs)
+    # 4. Monthly Heatmap for Dashboard (last 4 weeks / 28 days)
+    last_month_heatmap = []
+    if weeks:
+        all_days = []
+        for week in weeks:
+            for day in week.get("contributionDays", []):
+                if day.get("date"):
+                    all_days.append(day)
+        all_days.sort(key=lambda x: x.get("date"))
+        # Take the most recent 28 days
+        last_28_days = all_days[-28:]
+        last_month_heatmap = [day.get("contributionCount", 0) for day in last_28_days]
+
+    archetype = determine_archetype(
+        raw_github_stats, 
+        total_commits, 
+        total_prs, 
+        total_issues, 
+        repo_details
+    )
     
     return {
         "stats": {
             "total_commits": total_commits,
             "total_prs": total_prs,
             "total_issues": total_issues,
+            "ranked_repos": ranked_repos,
+            "repo_details": repo_details,
+            "recent_commits": recent_commits,
+            "code_churn": {"additions": total_additions, "deletions": total_deletions},
             "top_languages": top_languages,
             "total_stars": total_stars,
             "active_days_per_year": active_days,
             "social_ratio": f"{followers}/{following}",
             "last_week_heatmap": last_week_heatmap,
+            "last_month_heatmap": last_month_heatmap,
             "heatmap_labels": heatmap_labels
         },
         "archetype": archetype
@@ -88,8 +140,25 @@ def calculate_user_insights(raw_github_stats: Dict[str, Any]) -> Dict[str, Any]:
 def determine_archetype(
     raw_github_stats: Dict[str, Any], 
     total_commits: int, 
-    total_prs: int) -> str:
+    total_prs: int,
+    total_issues: int,
+    repo_details: list) -> str:
     
+    # 1. Priority: The Bug Hunter
+    if total_issues > (total_commits + total_prs) * 0.2:
+        return "🕵️ The Bug Hunter"
+
+    # 2. Priority: The Open Source Hero
+    if total_prs > total_commits * 0.4:
+        return "🌟 The Open Source Hero"
+
+    # 3. Priority: The Software Architect
+    architect_signals = {'docker', 'kubernetes', 'k8s', 'terraform', 'yml', 'yaml', 'config', 'workflow'}
+    for repo in repo_details:
+        files = [f.lower() for f in repo.get("files", [])]
+        if any(sig in f for f in files for sig in architect_signals):
+            return "🏗️ The Software Architect"
+
     weekend_commits = 0
     weekday_commits = 0
     
@@ -113,5 +182,3 @@ def determine_archetype(
         return "🛡️ The Weekend Warrior"
     else:
         return "💻 The Code Crusader"
-            
-    
